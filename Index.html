@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4-Player Buzz Quiz Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: white;
+            padding: 20px;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 900px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 3em;
+            margin-bottom: 30px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .players-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .player-card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+            border: 3px solid transparent;
+        }
+
+        .player-card.active {
+            transform: scale(1.1);
+            border-color: #ffd700;
+            background: rgba(255,215,0,0.3);
+            animation: glow 0.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { box-shadow: 0 0 10px #ffd700; }
+            to { box-shadow: 0 0 20px #ffd700, 0 0 30px #ffd700; }
+        }
+
+        .player-card.correct {
+            background: rgba(76, 175, 80, 0.5);
+            animation: correctPulse 0.6s;
+        }
+
+        .player-card.wrong {
+            background: rgba(244, 67, 54, 0.5);
+            animation: shake 0.5s;
+        }
+
+        @keyframes correctPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .player-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .player-key {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 1.5em;
+            margin: 10px 0;
+            font-weight: bold;
+            border: 2px solid white;
+        }
+
+        .player-score {
+            font-size: 2em;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .question-container {
+            background: rgba(255,255,255,0.15);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            min-height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .question {
+            font-size: 1.5em;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .timer {
+            font-size: 1.2em;
+            text-align: center;
+            margin: 20px 0;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+        }
+
+        .game-over {
+            text-align: center;
+            font-size: 2em;
+            margin: 30px 0;
+        }
+
+        .winner {
+            font-size: 2.5em;
+            color: #ffd700;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .instructions {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .players-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            h1 {
+                font-size: 2em;
+            }
+            .question {
+                font-size: 1.2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🎯 4-Player Buzz Quiz Battle! 🎯</h1>
+        
+        <div class="instructions" id="instructions">
+            <p>Each player uses their key to buzz in! First to buzz answers the question.</p>
+            <p>✅ Correct = +10 points | ❌ Wrong = -5 points</p>
+        </div>
+
+        <div class="players-container">
+            <div class="player-card" data-player="1">
+                <div class="player-name">Player 1 🔴</div>
+                <div class="player-key">Q</div>
+                <div class="player-score">0</div>
+            </div>
+            <div class="player-card" data-player="2">
+                <div class="player-name">Player 2 🔵</div>
+                <div class="player-key">P</div>
+                <div class="player-score">0</div>
+            </div>
+            <div class="player-card" data-player="3">
+                <div class="player-name">Player 3 🟢</div>
+                <div class="player-key">Z</div>
+                <div class="player-score">0</div>
+            </div>
+            <div class="player-card" data-player="4">
+                <div class="player-name">Player 4 🟡</div>
+                <div class="player-key">M</div>
+                <div class="player-score">0</div>
+            </div>
+        </div>
+
+        <div class="question-container">
+            <div class="question" id="question">Press "Start Game" to begin!</div>
+        </div>
+
+        <div class="timer" id="timer" style="display: none;">
+            Time to answer: <span id="timeLeft">5</span> seconds
+        </div>
+
+        <div class="controls">
+            <button id="startBtn" onclick="startGame()">Start Game</button>
+            <button id="correctBtn" onclick="answerCorrect()" style="display: none;">✅ Correct</button>
+            <button id="wrongBtn" onclick="answerWrong()" style="display: none;">❌ Wrong</button>
+            <button id="nextBtn" onclick="nextQuestion()" style="display: none;">Next Question →</button>
+            <button id="resetBtn" onclick="resetGame()">Reset Game</button>
+        </div>
+
+        <div class="game-over" id="gameOver" style="display: none;"></div>
+    </div>
+
+    <script>
+        const questions = [
+            "What is the capital of France?",
+            "How many continents are there?",
+            "What is 15 × 4?",
+            "What planet is known as the Red Planet?",
+            "Who painted the Mona Lisa?",
+            "What is the largest ocean on Earth?",
+            "How many days are in a leap year?",
+            "What is the smallest prime number?",
+            "What year did World War II end?",
+            "What is the chemical symbol for gold?",
+            "How many strings does a standard guitar have?",
+            "What is the fastest land animal?",
+            "Who wrote 'Romeo and Juliet'?",
+            "What is the largest mammal in the world?",
+            "How many minutes are in a full week?",
+            "What is the capital of Japan?",
+            "What does 'www' stand for?",
+            "How many hearts does an octopus have?",
+            "What is the most spoken language in the world?",
+            "In which year was the iPhone first released?"
+        ];
+
+        let gameState = {
+            currentQuestion: 0,
+            scores: [0, 0, 0, 0],
+            buzzerLocked: false,
+            currentBuzzer: null,
+            gameActive: false,
+            questionsAsked: [],
+            timer: null
+        };
+
+        const playerKeys = {
+            'q': 1, 'Q': 1,
+            'p': 2, 'P': 2,
+            'z': 3, 'Z': 3,
+            'm': 4, 'M': 4
+        };
+
+        // Sound effects using Web Audio API
+        function playSound(frequency, duration) {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = frequency;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+
+        function buzzSound() {
+            playSound(800, 0.2);
+        }
+
+        function correctSound() {
+            playSound(523, 0.1);
+            setTimeout(() => playSound(659, 0.1), 100);
+            setTimeout(() => playSound(784, 0.2), 200);
+        }
+
+        function wrongSound() {
+            playSound(200, 0.3);
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (!gameState.gameActive || gameState.buzzerLocked) return;
+            
+            const player = playerKeys[event.key];
+            if (player) {
+                buzzerPressed(player);
+            }
+        });
+
+        function buzzerPressed(player) {
+            if (gameState.buzzerLocked) return;
+            
+            gameState.buzzerLocked = true;
+            gameState.currentBuzzer = player;
+            
+            // Highlight the player who buzzed
+            document.querySelectorAll('.player-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            document.querySelector(`[data-player="${player}"]`).classList.add('active');
+            
+            buzzSound();
+            
+            // Show answer buttons
+            document.getElementById('correctBtn').style.display = 'inline-block';
+            document.getElementById('wrongBtn').style.display = 'inline-block';
+            
+            // Start answer timer
+            startAnswerTimer();
+        }
+
+        function startAnswerTimer() {
+            let timeLeft = 5;
+            document.getElementById('timer').style.display = 'block';
+            document.getElementById('timeLeft').textContent = timeLeft;
+            
+            gameState.timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timeLeft').textContent = timeLeft;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(gameState.timer);
+                    answerWrong();
+                }
+            }, 1000);
+        }
+
+        function answerCorrect() {
+            if (!gameState.currentBuzzer) return;
+            
+            clearInterval(gameState.timer);
+            document.getElementById('timer').style.display = 'none';
+            
+            const playerCard = document.querySelector(`[data-player="${gameState.currentBuzzer}"]`);
+            playerCard.classList.add('correct');
+            
+            gameState.scores[gameState.currentBuzzer - 1] += 10;
+            updateScores();
+            
+            correctSound();
+            
+            document.getElementById('correctBtn').style.display = 'none';
+            document.getElementById('wrongBtn').style.display = 'none';
+            document.getElementById('nextBtn').style.display = 'inline-block';
+            
+            setTimeout(() => {
+                playerCard.classList.remove('correct', 'active');
+            }, 1000);
+        }
+
+        function answerWrong() {
+            if (!gameState.currentBuzzer) return;
+            
+            clearInterval(gameState.timer);
+            document.getElementById('timer').style.display = 'none';
+            
+            const playerCard = document.querySelector(`[data-player="${gameState.currentBuzzer}"]`);
+            playerCard.classList.add('wrong');
+            
+            gameState.scores[gameState.currentBuzzer - 1] -= 5;
+            updateScores();
+            
+            wrongSound();
+            
+            document.getElementById('correctBtn').style.display = 'none';
+            document.getElementById('wrongBtn').style.display = 'none';
+            
+            setTimeout(() => {
+                playerCard.classList.remove('wrong', 'active');
+                gameState.buzzerLocked = false;
+                gameState.currentBuzzer = null;
+            }, 1000);
+        }
+
+        function updateScores() {
+            document.querySelectorAll('.player-card').forEach((card, index) => {
+                card.querySelector('.player-score').textContent = gameState.scores[index];
+            });
+        }
+
+        function getRandomQuestion() {
+            const availableQuestions = questions.filter((q, index) => 
+                !gameState.questionsAsked.includes(index)
+            );
+            
+            if (availableQuestions.length === 0) {
+                endGame();
+                return null;
+            }
+            
+            const randomIndex = Math.floor(Math.random() * questions.length);
+            if (!gameState.questionsAsked.includes(randomIndex)) {
+                gameState.questionsAsked.push(randomIndex);
+                return questions[randomIndex];
+            } else {
+                return getRandomQuestion();
+            }
+        }
+
+        function nextQuestion() {
+            const question = getRandomQuestion();
+            if (question) {
+                document.getElementById('question').textContent = question;
+                gameState.buzzerLocked = false;
+                gameState.currentBuzzer = null;
+                document.getElementById('nextBtn').style.display = 'none';
+                
+                document.querySelectorAll('.player-card').forEach(card => {
+                    card.classList.remove('active');
+                });
+            }
+        }
+
+        function startGame() {
+            gameState.gameActive = true;
+            gameState.questionsAsked = [];
+            document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('instructions').style.display = 'none';
+            document.getElementById('gameOver').style.display = 'none';
+            nextQuestion();
+        }
+
+        function endGame() {
+            gameState.gameActive = false;
+            
+            const maxScore = Math.max(...gameState.scores);
+            const winner = gameState.scores.indexOf(maxScore) + 1;
+            const winnerEmoji = ['🔴', '🔵', '🟢', '🟡'][winner - 1];
+            
+            document.getElementById('gameOver').innerHTML = `
+                <div class="winner">🏆 Player ${winner} ${winnerEmoji} Wins! 🏆</div>
+                <div>Final Score: ${maxScore} points</div>
+            `;
+            document.getElementById('gameOver').style.display = 'block';
+            document.getElementById('question').textContent = 'Game Over! Great job everyone!';
+            
+            // Play victory sound
+            correctSound();
+            setTimeout(correctSound, 300);
+            setTimeout(correctSound, 600);
+        }
+
+        function resetGame() {
+            gameState = {
+                currentQuestion: 0,
+                scores: [0, 0, 0, 0],
+                buzzerLocked: false,
+                currentBuzzer: null,
+                gameActive: false,
+                questionsAsked: [],
+                timer: null
+            };
+            
+            clearInterval(gameState.timer);
+            document.getElementById('timer').style.display = 'none';
+            
+            updateScores();
+            document.getElementById('question').textContent = 'Press "Start Game" to begin!';
+            document.getElementById('startBtn').style.display = 'inline-block';
+            document.getElementById('instructions').style.display = 'block';
+            document.getElementById('correctBtn').style.display = 'none';
+            document.getElementById('wrongBtn').style.display = 'none';
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('gameOver').style.display = 'none';
+            
+            document.querySelectorAll('.player-card').forEach(card => {
+                card.classList.remove('active', 'correct', 'wrong');
+            });
+        }
+    </script>
+</body>
+  </html>
