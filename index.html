@@ -2,87 +2,257 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4-Player Buzz Quiz Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Challenge Roulette - Group Party Game</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
             font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #FF6B6B, #4ECDC4, #45B7D1, #96CEB4);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
             color: white;
             padding: 20px;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
         .game-container {
             width: 100%;
-            max-width: 900px;
+            max-width: 400px;
+            text-align: center;
         }
 
-        h1 {
-            text-align: center;
-            font-size: 3em;
-            margin-bottom: 30px;
+        .title {
+            font-size: 2.5em;
+            margin-bottom: 10px;
             text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
-            animation: pulse 2s infinite;
+            animation: bounce 2s infinite;
         }
 
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
         }
 
-        .players-container {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
+        .subtitle {
+            font-size: 1em;
             margin-bottom: 30px;
+            opacity: 0.9;
         }
 
-        .player-card {
-            background: rgba(255,255,255,0.1);
-            border-radius: 15px;
-            padding: 20px;
-            text-align: center;
-            backdrop-filter: blur(10px);
+        .wheel-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 0 auto 30px;
+        }
+
+        .wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: conic-gradient(
+                from 0deg,
+                #FF6B6B 0deg 60deg,
+                #4ECDC4 60deg 120deg,
+                #45B7D1 120deg 180deg,
+                #96CEB4 180deg 240deg,
+                #FFEAA7 240deg 300deg,
+                #DDA0DD 300deg 360deg
+            );
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+            position: relative;
+        }
+
+        .wheel::before {
+            content: '▼';
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 30px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+
+        .wheel-sections {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .section-label {
+            position: absolute;
+            font-size: 1.5em;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .section-label:nth-child(1) { top: 25%; left: 65%; }
+        .section-label:nth-child(2) { top: 50%; left: 70%; }
+        .section-label:nth-child(3) { top: 75%; left: 50%; }
+        .section-label:nth-child(4) { top: 50%; left: 15%; }
+        .section-label:nth-child(5) { top: 25%; left: 20%; }
+        .section-label:nth-child(6) { top: 15%; left: 45%; }
+
+        .spin-button {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: white;
+            color: #333;
+            font-size: 1.2em;
+            font-weight: bold;
+            border: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
             transition: all 0.3s;
-            border: 3px solid transparent;
+            z-index: 5;
         }
 
-        .player-card.active {
-            transform: scale(1.1);
-            border-color: #ffd700;
-            background: rgba(255,215,0,0.3);
-            animation: glow 0.5s ease-in-out infinite alternate;
+        .spin-button:active {
+            transform: translate(-50%, -50%) scale(0.95);
         }
 
-        @keyframes glow {
-            from { box-shadow: 0 0 10px #ffd700; }
-            to { box-shadow: 0 0 20px #ffd700, 0 0 30px #ffd700; }
+        .spin-button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
         }
 
-        .player-card.correct {
-            background: rgba(76, 175, 80, 0.5);
-            animation: correctPulse 0.6s;
+        .challenge-card {
+            background: rgba(255,255,255,0.95);
+            color: #333;
+            border-radius: 20px;
+            padding: 30px;
+            margin: 20px 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transform: scale(0);
+            animation: popIn 0.5s forwards;
+            min-height: 200px;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
         }
 
-        .player-card.wrong {
-            background: rgba(244, 67, 54, 0.5);
-            animation: shake 0.5s;
+        @keyframes popIn {
+            to { transform: scale(1); }
         }
 
-        @keyframes correctPulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.2); }
-            100% { transform: scale(1); }
+        .challenge-type {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+
+        .challenge-text {
+            font-size: 1.2em;
+            line-height: 1.5;
+            margin: 20px 0;
+        }
+
+        .timer-display {
+            font-size: 3em;
+            font-weight: bold;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .action-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 25px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .action-btn:active {
+            transform: scale(0.95);
+        }
+
+        .players-setup {
+            background: rgba(255,255,255,0.95);
+            color: #333;
+            border-radius: 20px;
+            padding: 30px;
+            margin: 20px 0;
+        }
+
+        .player-input {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1.1em;
+        }
+
+        .start-btn {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            border-radius: 30px;
+            font-size: 1.3em;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+
+        .emoji {
+            font-size: 2em;
+            margin: 0 5px;
+        }
+
+        .points-display {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 15px;
+            margin: 20px 0;
+            font-size: 1.1em;
         }
 
         @keyframes shake {
@@ -91,439 +261,372 @@
             75% { transform: translateX(10px); }
         }
 
-        .player-name {
-            font-size: 1.2em;
-            font-weight: bold;
-            margin-bottom: 10px;
+        .shake {
+            animation: shake 0.5s;
         }
 
-        .player-key {
-            display: inline-block;
-            background: rgba(255,255,255,0.2);
-            padding: 10px 20px;
-            border-radius: 10px;
-            font-size: 1.5em;
-            margin: 10px 0;
-            font-weight: bold;
-            border: 2px solid white;
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
         }
 
-        .player-score {
-            font-size: 2em;
-            font-weight: bold;
-            margin-top: 10px;
-        }
-
-        .question-container {
-            background: rgba(255,255,255,0.15);
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 30px;
-            backdrop-filter: blur(10px);
-            min-height: 150px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .question {
-            font-size: 1.5em;
-            text-align: center;
-            line-height: 1.5;
-        }
-
-        .controls {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        button {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            font-size: 1.1em;
-            border-radius: 30px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-weight: bold;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-        }
-
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .timer {
-            font-size: 1.2em;
-            text-align: center;
-            margin: 20px 0;
-            padding: 10px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 10px;
-        }
-
-        .game-over {
-            text-align: center;
-            font-size: 2em;
-            margin: 30px 0;
-        }
-
-        .winner {
-            font-size: 2.5em;
-            color: #ffd700;
-            text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
-            animation: bounce 1s infinite;
-        }
-
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-20px); }
-        }
-
-        .instructions {
-            background: rgba(255,255,255,0.1);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        @media (max-width: 768px) {
-            .players-container {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            h1 {
-                font-size: 2em;
-            }
-            .question {
-                font-size: 1.2em;
-            }
+        .pulse {
+            animation: pulse 0.6s infinite;
         }
     </style>
 </head>
 <body>
     <div class="game-container">
-        <h1>🎯 4-Player Buzz Quiz Battle! 🎯</h1>
-        
-        <div class="instructions" id="instructions">
-            <p>Each player uses their key to buzz in! First to buzz answers the question.</p>
-            <p>✅ Correct = +10 points | ❌ Wrong = -5 points</p>
+        <h1 class="title">🎯 Challenge Roulette 🎯</h1>
+        <p class="subtitle">Put the phone in the middle and let's play!</p>
+
+        <div class="players-setup" id="playersSetup">
+            <h2>Who's Playing?</h2>
+            <input type="text" class="player-input" id="player1" placeholder="Player 1 name">
+            <input type="text" class="player-input" id="player2" placeholder="Player 2 name">
+            <input type="text" class="player-input" id="player3" placeholder="Player 3 name (optional)">
+            <input type="text" class="player-input" id="player4" placeholder="Player 4 name (optional)">
+            <button class="start-btn" onclick="startGame()">Let's Play! 🎉</button>
         </div>
 
-        <div class="players-container">
-            <div class="player-card" data-player="1">
-                <div class="player-name">Player 1 🔴</div>
-                <div class="player-key">Q</div>
-                <div class="player-score">0</div>
+        <div class="wheel-container" id="wheelContainer" style="display: none;">
+            <div class="wheel" id="wheel">
+                <div class="wheel-sections">
+                    <div class="section-label">🎭</div>
+                    <div class="section-label">🏃</div>
+                    <div class="section-label">🧠</div>
+                    <div class="section-label">😂</div>
+                    <div class="section-label">🎨</div>
+                    <div class="section-label">👥</div>
+                </div>
             </div>
-            <div class="player-card" data-player="2">
-                <div class="player-name">Player 2 🔵</div>
-                <div class="player-key">P</div>
-                <div class="player-score">0</div>
-            </div>
-            <div class="player-card" data-player="3">
-                <div class="player-name">Player 3 🟢</div>
-                <div class="player-key">Z</div>
-                <div class="player-score">0</div>
-            </div>
-            <div class="player-card" data-player="4">
-                <div class="player-name">Player 4 🟡</div>
-                <div class="player-key">M</div>
-                <div class="player-score">0</div>
-            </div>
+            <button class="spin-button" id="spinButton" onclick="spinWheel()">SPIN!</button>
         </div>
 
-        <div class="question-container">
-            <div class="question" id="question">Press "Start Game" to begin!</div>
+        <div class="challenge-card" id="challengeCard">
+            <div class="challenge-type" id="challengeType"></div>
+            <div class="challenge-text" id="challengeText"></div>
+            <div class="timer-display" id="timerDisplay"></div>
+            <div class="action-buttons" id="actionButtons"></div>
         </div>
 
-        <div class="timer" id="timer" style="display: none;">
-            Time to answer: <span id="timeLeft">5</span> seconds
+        <div class="points-display" id="pointsDisplay" style="display: none;">
+            <div id="scores"></div>
         </div>
-
-        <div class="controls">
-            <button id="startBtn" onclick="startGame()">Start Game</button>
-            <button id="correctBtn" onclick="answerCorrect()" style="display: none;">✅ Correct</button>
-            <button id="wrongBtn" onclick="answerWrong()" style="display: none;">❌ Wrong</button>
-            <button id="nextBtn" onclick="nextQuestion()" style="display: none;">Next Question →</button>
-            <button id="resetBtn" onclick="resetGame()">Reset Game</button>
-        </div>
-
-        <div class="game-over" id="gameOver" style="display: none;"></div>
     </div>
 
     <script>
-        const questions = [
-            "What is the capital of France?",
-            "How many continents are there?",
-            "What is 15 × 4?",
-            "What planet is known as the Red Planet?",
-            "Who painted the Mona Lisa?",
-            "What is the largest ocean on Earth?",
-            "How many days are in a leap year?",
-            "What is the smallest prime number?",
-            "What year did World War II end?",
-            "What is the chemical symbol for gold?",
-            "How many strings does a standard guitar have?",
-            "What is the fastest land animal?",
-            "Who wrote 'Romeo and Juliet'?",
-            "What is the largest mammal in the world?",
-            "How many minutes are in a full week?",
-            "What is the capital of Japan?",
-            "What does 'www' stand for?",
-            "How many hearts does an octopus have?",
-            "What is the most spoken language in the world?",
-            "In which year was the iPhone first released?"
-        ];
+        let players = [];
+        let currentPlayer = 0;
+        let scores = {};
+        let spinning = false;
+        let timer = null;
 
-        let gameState = {
-            currentQuestion: 0,
-            scores: [0, 0, 0, 0],
-            buzzerLocked: false,
-            currentBuzzer: null,
-            gameActive: false,
-            questionsAsked: [],
-            timer: null
-        };
-
-        const playerKeys = {
-            'q': 1, 'Q': 1,
-            'p': 2, 'P': 2,
-            'z': 3, 'Z': 3,
-            'm': 4, 'M': 4
-        };
-
-        // Sound effects using Web Audio API
-        function playSound(frequency, duration) {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            oscillator.frequency.value = frequency;
-            oscillator.type = 'sine';
-            
-            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
-            
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + duration);
-        }
-
-        function buzzSound() {
-            playSound(800, 0.2);
-        }
-
-        function correctSound() {
-            playSound(523, 0.1);
-            setTimeout(() => playSound(659, 0.1), 100);
-            setTimeout(() => playSound(784, 0.2), 200);
-        }
-
-        function wrongSound() {
-            playSound(200, 0.3);
-        }
-
-        document.addEventListener('keydown', (event) => {
-            if (!gameState.gameActive || gameState.buzzerLocked) return;
-            
-            const player = playerKeys[event.key];
-            if (player) {
-                buzzerPressed(player);
+        const challenges = {
+            acting: {
+                emoji: '🎭',
+                color: '#FF6B6B',
+                challenges: [
+                    { text: "Act out your favorite movie scene without speaking - others guess!", time: 60 },
+                    { text: "Pretend to be a robot falling in love - make everyone laugh!", time: 45 },
+                    { text: "Act like you're stuck in slow motion for the next minute", time: 60 },
+                    { text: "Mime brushing your teeth with your non-dominant hand while hopping", time: 30 },
+                    { text: "Pretend you're a news reporter reporting on the person to your left", time: 45 },
+                    { text: "Act out 3 different animals - others guess each one!", time: 60 },
+                    { text: "Pretend to be a superhero saving everyone in the room", time: 45 },
+                    { text: "Do your best impression of the person to your right", time: 30 }
+                ]
+            },
+            physical: {
+                emoji: '🏃',
+                color: '#4ECDC4',
+                challenges: [
+                    { text: "Do 10 jumping jacks while singing Happy Birthday", time: 30 },
+                    { text: "Balance on one foot while naming 10 countries", time: 45 },
+                    { text: "Do the chicken dance for 30 seconds", time: 30 },
+                    { text: "Try to lick your elbow (impossible but funny!)", time: 15 },
+                    { text: "Walk across the room with a book balanced on your head", time: 30 },
+                    { text: "Do 5 push-ups while others count in different languages", time: 45 },
+                    { text: "Spin around 10 times then try to walk in a straight line", time: 30 },
+                    { text: "Hold a plank position while telling a joke", time: 30 }
+                ]
+            },
+            mental: {
+                emoji: '🧠',
+                color: '#45B7D1',
+                challenges: [
+                    { text: "Name 15 words that rhyme with 'day' - others judge!", time: 45 },
+                    { text: "Count backwards from 50 by 3s", time: 60 },
+                    { text: "Say the alphabet backwards", time: 45 },
+                    { text: "Name a country for each letter of your name", time: 30 },
+                    { text: "Tell a story using only 4-word sentences", time: 60 },
+                    { text: "List 10 things you can do with a paper clip", time: 45 },
+                    { text: "Describe the person to your left using only food comparisons", time: 45 },
+                    { text: "Name 20 things you'd find in a kitchen in 30 seconds", time: 30 }
+                ]
+            },
+            funny: {
+                emoji: '😂',
+                color: '#96CEB4',
+                challenges: [
+                    { text: "Talk in a funny accent for the next 2 rounds", time: 0 },
+                    { text: "Make the group laugh without speaking - just faces!", time: 30 },
+                    { text: "Tell your most embarrassing story in 30 seconds", time: 30 },
+                    { text: "Sing everything you say for the next round", time: 0 },
+                    { text: "Do your best evil villain laugh for 10 seconds", time: 10 },
+                    { text: "Speak only in questions for the next minute", time: 60 },
+                    { text: "Make up a rap about the person across from you", time: 45 },
+                    { text: "Tell a knock-knock joke but make it about someone in the room", time: 30 }
+                ]
+            },
+            creative: {
+                emoji: '🎨',
+                color: '#FFEAA7',
+                challenges: [
+                    { text: "Draw the person to your left in the air - others guess who!", time: 45 },
+                    { text: "Create a secret handshake with the person next to you", time: 60 },
+                    { text: "Make up a theme song for the person across from you and sing it", time: 45 },
+                    { text: "Use your body to spell out a 5-letter word - others guess", time: 45 },
+                    { text: "Create a new dance move and teach it to everyone", time: 60 },
+                    { text: "Tell a story where each person adds one sentence", time: 90 },
+                    { text: "Make sound effects for everything you do for 1 minute", time: 60 },
+                    { text: "Invent a new sport using only items within arm's reach", time: 60 }
+                ]
+            },
+            group: {
+                emoji: '👥',
+                color: '#DDA0DD',
+                challenges: [
+                    { text: "Everyone: Strike a pose and freeze for 10 seconds!", time: 10 },
+                    { text: "Group challenge: Form a human letter together", time: 30 },
+                    { text: "Everyone shares their first impression of the person to their right", time: 0 },
+                    { text: "Simon Says with the current player as Simon (3 commands)", time: 45 },
+                    { text: "Everyone: Make the same animal sound at the same time", time: 15 },
+                    { text: "Group statue: Everyone freeze in a dramatic scene", time: 20 },
+                    { text: "Pass an invisible ball around using only expressions", time: 45 },
+                    { text: "Everyone: Share your superhero name and power", time: 60 }
+                ]
             }
-        });
+        };
 
-        function buzzerPressed(player) {
-            if (gameState.buzzerLocked) return;
+        const challengeTypes = Object.keys(challenges);
+
+        function startGame() {
+            const playerInputs = [
+                document.getElementById('player1').value,
+                document.getElementById('player2').value,
+                document.getElementById('player3').value,
+                document.getElementById('player4').value
+            ];
+
+            players = playerInputs.filter(name => name.trim() !== '');
             
-            gameState.buzzerLocked = true;
-            gameState.currentBuzzer = player;
-            
-            // Highlight the player who buzzed
-            document.querySelectorAll('.player-card').forEach(card => {
-                card.classList.remove('active');
+            if (players.length < 2) {
+                alert('Need at least 2 players to start!');
+                return;
+            }
+
+            players.forEach(player => {
+                scores[player] = 0;
             });
-            document.querySelector(`[data-player="${player}"]`).classList.add('active');
-            
-            buzzSound();
-            
-            // Show answer buttons
-            document.getElementById('correctBtn').style.display = 'inline-block';
-            document.getElementById('wrongBtn').style.display = 'inline-block';
-            
-            // Start answer timer
-            startAnswerTimer();
+
+            document.getElementById('playersSetup').style.display = 'none';
+            document.getElementById('wheelContainer').style.display = 'block';
+            document.getElementById('pointsDisplay').style.display = 'block';
+            updateScores();
         }
 
-        function startAnswerTimer() {
-            let timeLeft = 5;
-            document.getElementById('timer').style.display = 'block';
-            document.getElementById('timeLeft').textContent = timeLeft;
+        function spinWheel() {
+            if (spinning) return;
             
-            gameState.timer = setInterval(() => {
+            spinning = true;
+            document.getElementById('spinButton').disabled = true;
+            document.getElementById('challengeCard').style.display = 'none';
+            
+            const wheel = document.getElementById('wheel');
+            const spins = Math.floor(Math.random() * 5) + 5;
+            const finalAngle = Math.floor(Math.random() * 360);
+            const totalRotation = spins * 360 + finalAngle;
+            
+            wheel.style.transform = `rotate(${totalRotation}deg)`;
+            
+            setTimeout(() => {
+                const selectedIndex = Math.floor(((360 - (finalAngle % 360)) / 60) % 6);
+                const selectedType = challengeTypes[selectedIndex];
+                showChallenge(selectedType);
+                spinning = false;
+                document.getElementById('spinButton').disabled = false;
+            }, 4000);
+        }
+
+        function showChallenge(type) {
+            const challengeData = challenges[type];
+            const randomChallenge = challengeData.challenges[
+                Math.floor(Math.random() * challengeData.challenges.length)
+            ];
+            
+            const card = document.getElementById('challengeCard');
+            const typeElement = document.getElementById('challengeType');
+            const textElement = document.getElementById('challengeText');
+            const timerDisplay = document.getElementById('timerDisplay');
+            const actionButtons = document.getElementById('actionButtons');
+            
+            typeElement.innerHTML = `${challengeData.emoji} ${type.toUpperCase()} CHALLENGE ${challengeData.emoji}`;
+            typeElement.style.background = challengeData.color;
+            typeElement.style.color = 'white';
+            
+            const currentPlayerName = players[currentPlayer % players.length];
+            textElement.innerHTML = `<strong>${currentPlayerName}'s Turn:</strong><br><br>${randomChallenge.text}`;
+            
+            card.style.display = 'flex';
+            
+            // Clear previous buttons
+            actionButtons.innerHTML = '';
+            
+            if (randomChallenge.time > 0) {
+                startTimer(randomChallenge.time);
+                
+                const completeBtn = document.createElement('button');
+                completeBtn.className = 'action-btn';
+                completeBtn.innerHTML = '✅ Completed!';
+                completeBtn.onclick = () => completeChallenge(currentPlayerName, 10);
+                
+                const failBtn = document.createElement('button');
+                failBtn.className = 'action-btn';
+                failBtn.innerHTML = '❌ Failed';
+                failBtn.onclick = () => completeChallenge(currentPlayerName, 0);
+                
+                actionButtons.appendChild(completeBtn);
+                actionButtons.appendChild(failBtn);
+            } else {
+                timerDisplay.style.display = 'none';
+                
+                const doneBtn = document.createElement('button');
+                doneBtn.className = 'action-btn';
+                doneBtn.innerHTML = '✨ Done! Next Player';
+                doneBtn.onclick = () => nextPlayer();
+                actionButtons.appendChild(doneBtn);
+            }
+        }
+
+        function startTimer(seconds) {
+            clearInterval(timer);
+            const timerDisplay = document.getElementById('timerDisplay');
+            timerDisplay.style.display = 'block';
+            let timeLeft = seconds;
+            
+            timerDisplay.textContent = timeLeft;
+            
+            timer = setInterval(() => {
                 timeLeft--;
-                document.getElementById('timeLeft').textContent = timeLeft;
+                timerDisplay.textContent = timeLeft;
+                
+                if (timeLeft <= 5) {
+                    timerDisplay.classList.add('pulse');
+                    timerDisplay.style.color = '#FF6B6B';
+                }
                 
                 if (timeLeft <= 0) {
-                    clearInterval(gameState.timer);
-                    answerWrong();
+                    clearInterval(timer);
+                    timerDisplay.textContent = "TIME'S UP!";
+                    timerDisplay.classList.add('shake');
+                    setTimeout(() => {
+                        timerDisplay.classList.remove('shake', 'pulse');
+                        timerDisplay.style.color = '#333';
+                    }, 1000);
                 }
             }, 1000);
         }
 
-        function answerCorrect() {
-            if (!gameState.currentBuzzer) return;
-            
-            clearInterval(gameState.timer);
-            document.getElementById('timer').style.display = 'none';
-            
-            const playerCard = document.querySelector(`[data-player="${gameState.currentBuzzer}"]`);
-            playerCard.classList.add('correct');
-            
-            gameState.scores[gameState.currentBuzzer - 1] += 10;
+        function completeChallenge(player, points) {
+            clearInterval(timer);
+            scores[player] += points;
             updateScores();
             
-            correctSound();
+            if (points > 0) {
+                document.getElementById('challengeCard').style.background = '#4CAF50';
+                setTimeout(() => {
+                    document.getElementById('challengeCard').style.background = 'rgba(255,255,255,0.95)';
+                }, 500);
+            }
             
-            document.getElementById('correctBtn').style.display = 'none';
-            document.getElementById('wrongBtn').style.display = 'none';
-            document.getElementById('nextBtn').style.display = 'inline-block';
-            
-            setTimeout(() => {
-                playerCard.classList.remove('correct', 'active');
-            }, 1000);
+            nextPlayer();
         }
 
-        function answerWrong() {
-            if (!gameState.currentBuzzer) return;
+        function nextPlayer() {
+            currentPlayer = (currentPlayer + 1) % players.length;
+            document.getElementById('challengeCard').style.display = 'none';
+            document.getElementById('timerDisplay').style.display = 'none';
             
-            clearInterval(gameState.timer);
-            document.getElementById('timer').style.display = 'none';
-            
-            const playerCard = document.querySelector(`[data-player="${gameState.currentBuzzer}"]`);
-            playerCard.classList.add('wrong');
-            
-            gameState.scores[gameState.currentBuzzer - 1] -= 5;
-            updateScores();
-            
-            wrongSound();
-            
-            document.getElementById('correctBtn').style.display = 'none';
-            document.getElementById('wrongBtn').style.display = 'none';
-            
-            setTimeout(() => {
-                playerCard.classList.remove('wrong', 'active');
-                gameState.buzzerLocked = false;
-                gameState.currentBuzzer = null;
-            }, 1000);
+            // Check for winner (first to 50 points)
+            const winner = Object.entries(scores).find(([player, score]) => score >= 50);
+            if (winner) {
+                showWinner(winner[0]);
+            }
         }
 
         function updateScores() {
-            document.querySelectorAll('.player-card').forEach((card, index) => {
-                card.querySelector('.player-score').textContent = gameState.scores[index];
+            const scoresDiv = document.getElementById('scores');
+            let html = '<strong>Scores:</strong><br>';
+            Object.entries(scores).forEach(([player, score]) => {
+                html += `${player}: ${score} points<br>`;
             });
+            scoresDiv.innerHTML = html;
         }
 
-        function getRandomQuestion() {
-            const availableQuestions = questions.filter((q, index) => 
-                !gameState.questionsAsked.includes(index)
-            );
-            
-            if (availableQuestions.length === 0) {
-                endGame();
-                return null;
-            }
-            
-            const randomIndex = Math.floor(Math.random() * questions.length);
-            if (!gameState.questionsAsked.includes(randomIndex)) {
-                gameState.questionsAsked.push(randomIndex);
-                return questions[randomIndex];
-            } else {
-                return getRandomQuestion();
-            }
-        }
-
-        function nextQuestion() {
-            const question = getRandomQuestion();
-            if (question) {
-                document.getElementById('question').textContent = question;
-                gameState.buzzerLocked = false;
-                gameState.currentBuzzer = null;
-                document.getElementById('nextBtn').style.display = 'none';
-                
-                document.querySelectorAll('.player-card').forEach(card => {
-                    card.classList.remove('active');
-                });
-            }
-        }
-
-        function startGame() {
-            gameState.gameActive = true;
-            gameState.questionsAsked = [];
-            document.getElementById('startBtn').style.display = 'none';
-            document.getElementById('instructions').style.display = 'none';
-            document.getElementById('gameOver').style.display = 'none';
-            nextQuestion();
-        }
-
-        function endGame() {
-            gameState.gameActive = false;
-            
-            const maxScore = Math.max(...gameState.scores);
-            const winner = gameState.scores.indexOf(maxScore) + 1;
-            const winnerEmoji = ['🔴', '🔵', '🟢', '🟡'][winner - 1];
-            
-            document.getElementById('gameOver').innerHTML = `
-                <div class="winner">🏆 Player ${winner} ${winnerEmoji} Wins! 🏆</div>
-                <div>Final Score: ${maxScore} points</div>
+        function showWinner(winner) {
+            document.getElementById('wheelContainer').style.display = 'none';
+            document.getElementById('challengeCard').style.display = 'flex';
+            document.getElementById('challengeCard').innerHTML = `
+                <div style="font-size: 3em; margin-bottom: 20px;">🏆</div>
+                <div style="font-size: 2em; font-weight: bold; color: #FFD700;">
+                    ${winner} WINS!
+                </div>
+                <div style="font-size: 1.5em; margin-top: 20px;">
+                    Final Score: ${scores[winner]} points
+                </div>
+                <button class="action-btn" onclick="location.reload()" style="margin-top: 30px;">
+                    Play Again 🎮
+                </button>
             `;
-            document.getElementById('gameOver').style.display = 'block';
-            document.getElementById('question').textContent = 'Game Over! Great job everyone!';
-            
-            // Play victory sound
-            correctSound();
-            setTimeout(correctSound, 300);
-            setTimeout(correctSound, 600);
         }
 
-        function resetGame() {
-            gameState = {
-                currentQuestion: 0,
-                scores: [0, 0, 0, 0],
-                buzzerLocked: false,
-                currentBuzzer: null,
-                gameActive: false,
-                questionsAsked: [],
-                timer: null
-            };
-            
-            clearInterval(gameState.timer);
-            document.getElementById('timer').style.display = 'none';
-            
-            updateScores();
-            document.getElementById('question').textContent = 'Press "Start Game" to begin!';
-            document.getElementById('startBtn').style.display = 'inline-block';
-            document.getElementById('instructions').style.display = 'block';
-            document.getElementById('correctBtn').style.display = 'none';
-            document.getElementById('wrongBtn').style.display = 'none';
-            document.getElementById('nextBtn').style.display = 'none';
-            document.getElementById('gameOver').style.display = 'none';
-            
-            document.querySelectorAll('.player-card').forEach(card => {
-                card.classList.remove('active', 'correct', 'wrong');
-            });
+        // Prevent zoom on double tap
+        document.addEventListener('touchstart', function(e) {
+            if (e.touches.length > 1) {
+                e.preventDefault();
+            }
+        });
+
+        // Add some fun sound effects using Web Audio API
+        function playSound(frequency, duration) {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = frequency;
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + duration);
+            } catch (e) {
+                // Audio not supported
+            }
         }
+
+        // Add click sound to buttons
+        document.addEventListener('click', function(e) {
+            if (e.target.tagName === 'BUTTON') {
+                playSound(600, 0.1);
+            }
+        });
     </script>
 </body>
-  </html>
+    </html>
